@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  nome        String
+  email       String   @unique
+  senha       String
+  matricula   String
+  tipo        UserType 
+  createdAt   DateTime @default(now())
+  QuizAnswer  QuizAnswer[]
+  Message     Message[]
+  Event       Event[]
+  QandA       QandA[]    
+  Folders     Folder[]
+  Respostas   Resposta[]    
+}
+
+enum UserType {
+  ADMIN
+  ALUNO
+}
+
+model Semester {
+  id          String     @id @default(uuid())
+  numero      Int
+  descricao   String?
+  subjects    Subject[]
+}
+
+model Subject {
+  id          String     @id @default(uuid())
+  nome        String
+  codigo      String     @unique
+  semesterId  String
+  semester    Semester   @relation(fields: [semesterId], references: [id])
+  contents    Content[]
+  quizzes     Quiz[]
+  qanda       QandA[]
+}
+
+model Folder {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  createdBy String?
+  user      User?   @relation(fields: [createdBy], references: [id])
+  contents  Content[]
+}
+
+
+model Content {
+  id          String     @id @default(uuid())
+  titulo      String
+  descricao   String
+  tipo        ContentType
+  url         String?
+  subjectId   String?
+  subject     Subject?    @relation(fields: [subjectId], references: [id])
+  folderId  String? 
+  folder    Folder?  @relation(fields: [folderId], references: [id])
+}
+
+enum ContentType {
+  PDF
+  VIDEO
+  LINK
+}
+
+model Quiz {
+  id          String     @id @default(uuid())
+  titulo      String
+  descricao   String
+  createdBy   String     
+  subjectId   String?
+  subject     Subject?    @relation(fields: [subjectId], references: [id])
+  questions   QuizQuestion[]
+  answers     QuizAnswer[]  
+}
+
+model QuizQuestion {
+  id              String     @id @default(uuid())
+  enunciado       String
+  alternativas    String[]  
+  respostaCorreta String    
+  quizId          String
+  quiz            Quiz       @relation(fields: [quizId], references: [id])
+  answers         QuizAnswer[]
+}
+
+model QuizAnswer {
+  id          String        @id @default(uuid())
+  resposta    String        
+  correta     Boolean       
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  questionId  String
+  question    QuizQuestion  @relation(fields: [questionId], references: [id])
+  quizId      String
+  quiz        Quiz          @relation(fields: [quizId], references: [id])
+}
+
+model QandA {
+  id           String     @id @default(uuid())
+  pergunta     String
+  resposta     String?
+  dataPergunta DateTime   @default(now())
+  dataResposta DateTime?
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  subjectId    String?
+  subject      Subject?   @relation(fields: [subjectId], references: [id])
+  respostas    Resposta[]
+}
+
+model Resposta {
+  id           String     @id @default(uuid())
+  conteudo     String
+  dataResposta DateTime   @default(now())
+  perguntaId   String
+  pergunta     QandA      @relation(fields: [perguntaId], references: [id])
+  autorId      String
+  autor        User       @relation(fields: [autorId], references: [id])
+}
+
+model Message {
+  id          String     @id @default(uuid())
+  conteudo    String
+  dataEnvio   DateTime   @default(now())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+}
+
+model Event {
+  id          String     @id @default(uuid())
+  titulo      String
+  descricao   String
+  data        DateTime
+  createdBy   String    
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+}
