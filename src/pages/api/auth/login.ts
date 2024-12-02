@@ -32,16 +32,7 @@ export default async function loginHandler(
       expiresIn: "1h",
     });
 
-    res.setHeader(
-      "Set-Cookie",
-      serialize("authToken", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 3600,
-        path: "/",
-      })
-    );
+    const isProduction = process.env.NODE_ENV === "production";
 
     return res.status(200).json({
       message: "Login bem-sucedido",
