@@ -61,7 +61,7 @@ export default function FolderDetailsPage() {
         {/* Botão Voltar */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/materiais')}
             className="text-gray-600 hover:text-gray-800 transition"
           >
             <IconArrowLeft size={24} />
