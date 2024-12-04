@@ -13,11 +13,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-br">
-      <body
-        className={`antialiased`}
-      >
+      <body className="antialiased">
         {children}
-        <Toaster/>
+        <Toaster />
       </body>
     </html>
   );

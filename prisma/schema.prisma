@@ -8,19 +8,21 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  nome        String
-  email       String   @unique
-  senha       String
-  matricula   String
-  tipo        UserType 
-  createdAt   DateTime @default(now())
-  QuizAnswer  QuizAnswer[]
-  Message     Message[]
-  Event       Event[]
-  QandA       QandA[]    
-  Folders     Folder[]
-  Respostas   Resposta[]    
+  id                 String   @id @default(uuid())
+  nome               String
+  email              String   @unique
+  senha              String
+  matricula          String
+  tipo               UserType
+  selectedSemesterId String? 
+  selectedSemester   Semester? @relation("UserToSemester", fields: [selectedSemesterId], references: [id]) // Relação direta
+  createdAt          DateTime @default(now())
+  QuizAnswer         QuizAnswer[]
+  Message            Message[]
+  Event              Event[]
+  QandA              QandA[]
+  Folders            Folder[]
+  Respostas          Resposta[]
 }
 
 enum UserType {
@@ -33,6 +35,7 @@ model Semester {
   numero      Int
   descricao   String?
   subjects    Subject[]
+  users       User[]      @relation("UserToSemester") // Relação inversa
 }
 
 model Subject {
@@ -55,7 +58,6 @@ model Folder {
   contents  Content[]
 }
 
-
 model Content {
   id          String     @id @default(uuid())
   titulo      String
@@ -64,8 +66,8 @@ model Content {
   url         String?
   subjectId   String?
   subject     Subject?    @relation(fields: [subjectId], references: [id])
-  folderId  String? 
-  folder    Folder?  @relation(fields: [folderId], references: [id])
+  folderId    String? 
+  folder      Folder?  @relation(fields: [folderId], references: [id])
 }
 
 enum ContentType {

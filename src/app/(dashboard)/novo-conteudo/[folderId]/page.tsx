@@ -92,7 +92,9 @@ export default function NovoConteudoPage() {
             <option value="" disabled>
               Selecione o tipo de arquivo
             </option>
-            <option value="PDF">Livro</option>
+            <option value="PDF">PDF</option>
+            <option value="DOCX">Documento Word</option>
+            <option value="PPTX">Apresentação PowerPoint</option>
             <option value="VIDEO">Vídeo</option>
             <option value="LINK">Slide</option>
           </select>
