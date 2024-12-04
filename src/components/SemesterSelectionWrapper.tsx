@@ -3,27 +3,30 @@
 import SemesterSelectionModal from "@/components/SemesterSelectionModal";
 import { useEffect, useState } from "react";
 
-// Defina o tipo para o usuário
-interface User {
-  id: string;
-  selectedSemesterId: string | null;
-}
-
 export default function SemesterSelectionWrapper({
-  user,
   children,
 }: {
-  user: User; // Adiciona o tipo para o usuário
   children: React.ReactNode;
 }) {
-  const [loading, setLoading] = useState(!user.selectedSemesterId);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Se o usuário já tiver um semestre selecionado, não exiba o modal novamente
-    if (user.selectedSemesterId) {
-      setLoading(false);
+    async function fetchUser() {
+      try {
+        const response = await fetch("/api/users/getMe");
+        if (!response.ok) throw new Error("Erro ao buscar usuário.");
+        const data = await response.json();
+        setUser(data);
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [user.selectedSemesterId]);
+
+    fetchUser();
+  }, []);
 
   if (loading) {
     return (

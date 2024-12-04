@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1 bg-gray-100 p-6">
-        <SemesterSelectionWrapper user={user}>
+        <SemesterSelectionWrapper>
           {children}
         </SemesterSelectionWrapper>
 
