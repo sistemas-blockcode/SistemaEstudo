@@ -73,7 +73,9 @@ model Content {
 enum ContentType {
   PDF
   VIDEO
-  LINK
+  DOCX
+  IMG
+  PPTX
 }
 
 model Quiz {

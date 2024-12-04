@@ -9,10 +9,11 @@ interface FolderProps {
   name: string;
   onClick: () => void;
   onDelete: () => void;
+  onEdit: () => void;
   isAdmin: boolean;
 }
 
-function Folder({ id, name, onClick, onDelete, isAdmin }: FolderProps) {
+function Folder({ id, name, onClick, onDelete, onEdit, isAdmin }: FolderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   return (
@@ -47,6 +48,15 @@ function Folder({ id, name, onClick, onDelete, isAdmin }: FolderProps) {
               >
                 Excluir
               </button>
+              <button
+                className="block w-full px-4 py-2 text-sm text-orange-600 hover:bg-gray-100 text-left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+              >
+                Editar
+              </button>
             </div>
           )}
         </div>
@@ -57,8 +67,10 @@ function Folder({ id, name, onClick, onDelete, isAdmin }: FolderProps) {
 
 export default function MaterialsPage() {
   const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [folderName, setFolderName] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -91,7 +103,7 @@ export default function MaterialsPage() {
   }, []);
 
   const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) {
+    if (!folderName.trim()) {
       toast({
         title: 'Erro',
         description: 'O nome da pasta não pode estar vazio.',
@@ -104,15 +116,15 @@ export default function MaterialsPage() {
       const response = await fetch('/api/folders/addFolder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newFolderName }),
+        body: JSON.stringify({ name: folderName }),
       });
 
       if (!response.ok) throw new Error('Erro ao criar a pasta.');
 
       const newFolder = await response.json();
       setFolders([...folders, newFolder]);
-      setNewFolderName('');
-      setIsModalOpen(false);
+      setFolderName('');
+      setIsCreateModalOpen(false);
       toast({
         title: 'Sucesso',
         description: 'A pasta foi criada com sucesso.',
@@ -152,6 +164,46 @@ export default function MaterialsPage() {
     }
   };
 
+  const handleEditFolder = async () => {
+    if (!folderName.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'O nome da pasta não pode estar vazio.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/folders/updateFolder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingFolderId, name: folderName }),
+      });
+
+      if (!response.ok) throw new Error('Erro ao editar a pasta.');
+
+      setFolders((prev) =>
+        prev.map((folder) => (folder.id === editingFolderId ? { ...folder, name: folderName } : folder))
+      );
+      setFolderName('');
+      setEditingFolderId(null);
+      setIsEditModalOpen(false);
+      toast({
+        title: 'Sucesso',
+        description: 'A pasta foi editada com sucesso.',
+        variant: 'success',
+      });
+    } catch (error) {
+      console.error('Erro ao editar pasta:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao editar a pasta.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleFolderClick = (folderId: string) => {
     router.push(`/materiais/${folderId}`);
   };
@@ -164,7 +216,10 @@ export default function MaterialsPage() {
           <div className="flex gap-4">
             <button
               className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setFolderName('');
+                setIsCreateModalOpen(true);
+              }}
             >
               <IconPlus size={15} />
               Nova Pasta
@@ -181,12 +236,18 @@ export default function MaterialsPage() {
             name={folder.name}
             onClick={() => handleFolderClick(folder.id)}
             onDelete={() => handleDeleteFolder(folder.id)}
+            onEdit={() => {
+              setEditingFolderId(folder.id);
+              setFolderName(folder.name);
+              setIsEditModalOpen(true);
+            }}
             isAdmin={isAdmin}
           />
         ))}
       </div>
 
-      {isModalOpen && (
+      {/* Modal para criar pasta */}
+      {isCreateModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-md w-96">
             <h2 className="text-xl font-semibold mb-4">Criar Nova Pasta</h2>
@@ -194,13 +255,13 @@ export default function MaterialsPage() {
               type="text"
               placeholder="Nome da Pasta"
               className="p-2 border border-gray-300 rounded-lg w-full mb-4"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
             />
             <div className="flex justify-end gap-4">
               <button
                 className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setIsCreateModalOpen(false)}
               >
                 Cancelar
               </button>
@@ -209,6 +270,36 @@ export default function MaterialsPage() {
                 onClick={handleCreateFolder}
               >
                 Criar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para editar pasta */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-md w-96">
+            <h2 className="text-xl font-semibold mb-4">Editar Nome da Pasta</h2>
+            <input
+              type="text"
+              placeholder="Novo Nome da Pasta"
+              className="p-2 border border-gray-300 rounded-lg w-full mb-4"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+            />
+            <div className="flex justify-end gap-4">
+              <button
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition"
+                onClick={handleEditFolder}
+              >
+                Salvar
               </button>
             </div>
           </div>

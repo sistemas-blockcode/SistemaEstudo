@@ -29,7 +29,6 @@ export default function QAPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Fetch User Profile and Questions on Load
   useEffect(() => {
     async function fetchUserProfile() {
       try {
@@ -48,9 +47,18 @@ export default function QAPage() {
 
     async function fetchQuestions() {
       try {
-        const response = await fetch('/api/qanda/getQuestions');
+        // Obter o ID do usuário
+        const userResponse = await fetch('/api/users/getMe');
+        if (!userResponse.ok) throw new Error('Erro ao buscar ID do usuário.');
+        const user = await userResponse.json();
+        const userId = user.id;
+    
+        // Fazer a solicitação de perguntas, enviando o userId como query param
+        const response = await fetch(`/api/qanda/getQuestions?userId=${userId}`);
         if (!response.ok) throw new Error('Erro ao buscar perguntas.');
         const data = await response.json();
+    
+        // Atualizar o estado com as perguntas
         setQuestions(data.map((q: Question) => ({ ...q, respostas: q.respostas || [] })));
       } catch {
         toast({
@@ -62,17 +70,16 @@ export default function QAPage() {
         setLoading(false);
       }
     }
+    
 
     fetchUserProfile();
     fetchQuestions();
   }, []);
 
-  // Handle Question Selection
   const handleSelectQuestion = (question: Question) => {
-    setSelectedQuestion(question);
+    setSelectedQuestion(question || null);
   };
 
-  // Handle Question Submission
   const handleQuestionSubmit = async () => {
     if (!userId) {
       toast({
@@ -123,7 +130,6 @@ export default function QAPage() {
     }
   };
 
-  // Handle Response Submission
   const handleResponseSubmit = async () => {
     if (!selectedQuestion || !newResponse.trim()) {
       toast({
@@ -160,7 +166,6 @@ export default function QAPage() {
 
       const createdResponse = await response.json();
 
-      // Atualizar respostas da pergunta selecionada
       setSelectedQuestion((prev) =>
         prev
           ? {
@@ -173,7 +178,6 @@ export default function QAPage() {
           : prev
       );
 
-      // Atualizar lista de perguntas
       setQuestions((prev) =>
         prev.map((q) =>
           q.id === selectedQuestion.id
@@ -203,7 +207,6 @@ export default function QAPage() {
     }
   };
 
-  // Filter Questions
   const filteredQuestions = questions.filter(
     (q) =>
       (filter.subject === '' || q.subject === filter.subject) &&
@@ -247,9 +250,9 @@ export default function QAPage() {
           </button>
           <h2 className="text-lg font-semibold text-gray-800">{selectedQuestion.pergunta}</h2>
           <div className="space-y-3 mb-4">
-            {selectedQuestion.respostas.map((response) => (
+            {selectedQuestion.respostas?.map((response) => (
               <div key={response.id} className="p-3 bg-gray-100 rounded-lg">
-                <p className="font-semibold text-gray-800">{response.autor.nome}</p>
+                <p className="font-semibold text-gray-800">{response.autor?.nome || 'Anônimo'}</p>
                 <p className="text-gray-700">{response.conteudo}</p>
               </div>
             ))}

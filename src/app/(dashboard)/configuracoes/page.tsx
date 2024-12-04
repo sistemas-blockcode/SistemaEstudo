@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { IconTrash, IconUserCancel, IconUserPlus } from '@tabler/icons-react';
 
@@ -12,8 +13,10 @@ interface User {
 
 export default function SettingsPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [profile, setProfile] = useState<{ nome: string; email: string; tipo: string } | null>(null);
+  const [profile, setProfile] = useState<{ id: string; nome: string; email: string; tipo: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [password, setPassword] = useState({ newPassword: '', confirmPassword: '' });
 
   useEffect(() => {
     async function fetchProfile() {
@@ -21,7 +24,7 @@ export default function SettingsPage() {
         const response = await fetch('/api/users/getMe');
         if (!response.ok) throw new Error('Erro ao buscar perfil');
         const data = await response.json();
-        setProfile({ nome: data.nome, email: data.email, tipo: data.tipo });
+        setProfile({ id: data.id, nome: data.nome, email: data.email, tipo: data.tipo });
       } catch (error) {
         console.error('Erro ao carregar o perfil:', error);
       } finally {
@@ -44,6 +47,33 @@ export default function SettingsPage() {
     }
     fetchUsers();
   }, []);
+
+  const handlePasswordReset = async () => {
+    if (password.newPassword !== password.confirmPassword) {
+      alert('As senhas não coincidem.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users/changePassword', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'user-id': profile?.id || '', // Adiciona o ID do usuário autenticado no cabeçalho
+        },
+        body: JSON.stringify({ newPassword: password.newPassword }),
+      });
+
+      if (!response.ok) throw new Error('Erro ao redefinir senha');
+
+      alert('Senha alterada com sucesso.');
+      setIsModalOpen(false);
+      setPassword({ newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      console.error('Erro ao redefinir senha:', error);
+      alert('Erro ao redefinir senha. Tente novamente.');
+    }
+  };
 
   const handleDeleteUser = async (id: string) => {
     try {
@@ -134,10 +164,57 @@ export default function SettingsPage() {
             className="p-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
           />
         </div>
-        <button className="mt-4 text-xs px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition">
-          Salvar Configurações
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="mt-4 text-xs px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition"
+          >
+            Salvar Configurações
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="mt-4 text-xs px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition"
+          >
+            Trocar Senha
+          </button>
+        </div>
       </div>
+
+      {/* Modal para redefinir senha */}
+      {isModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-lg font-semibold mb-4">Redefinir Senha</h2>
+            <input
+              type="password"
+              placeholder="Nova Senha"
+              value={password.newPassword}
+              onChange={(e) => setPassword((prev) => ({ ...prev, newPassword: e.target.value }))}
+              className="w-full p-2 border border-gray-300 rounded-lg mb-4"
+            />
+            <input
+              type="password"
+              placeholder="Confirmar Senha"
+              value={password.confirmPassword}
+              onChange={(e) => setPassword((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+              className="w-full p-2 border border-gray-300 rounded-lg mb-4"
+            />
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handlePasswordReset}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Gerenciamento do Sistema - Visível Apenas para ADMIN */}
       {profile?.tipo === 'ADMIN' && (

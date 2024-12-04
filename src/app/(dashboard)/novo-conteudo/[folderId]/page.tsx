@@ -94,9 +94,9 @@ export default function NovoConteudoPage() {
             </option>
             <option value="PDF">PDF</option>
             <option value="DOCX">Documento Word</option>
-            <option value="PPTX">Apresentação PowerPoint</option>
+            <option value="IMG">Imagem (JPG, PNG)</option>
             <option value="VIDEO">Vídeo</option>
-            <option value="LINK">Slide</option>
+            <option value="PPTX">Apresentação PowerPoint</option>
           </select>
         </div>
 

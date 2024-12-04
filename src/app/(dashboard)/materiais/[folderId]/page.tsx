@@ -20,6 +20,8 @@ export default function FolderDetailsPage() {
   const [folder, setFolder] = useState<any>(null);
   const [profile, setProfile] = useState<{ nome: string; email: string; tipo: string } | null>(null);
   const [dropdownsOpen, setDropdownsOpen] = useState<{ [key: string]: boolean }>({});
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editContent, setEditContent] = useState<{ id: string; titulo: string } | null>(null);
 
   useEffect(() => {
     async function fetchFolder() {
@@ -47,6 +49,39 @@ export default function FolderDetailsPage() {
     if (folderId) fetchFolder();
     fetchProfile();
   }, [folderId]);
+
+  const handleEditContent = async () => {
+    if (!editContent?.titulo.trim()) {
+      alert('O título do conteúdo não pode estar vazio.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/contents/updateContent`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editContent.id, titulo: editContent.titulo }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Erro ao editar o conteúdo.');
+      }
+
+      alert('Conteúdo atualizado com sucesso!');
+      setFolder((prev: any) => ({
+        ...prev,
+        contents: prev.contents.map((content: any) =>
+          content.id === editContent.id ? { ...content, titulo: editContent.titulo } : content
+        ),
+      }));
+      setIsEditModalOpen(false);
+      setEditContent(null);
+    } catch (error) {
+      console.error('Erro ao editar conteúdo:', error);
+      alert('Erro ao editar conteúdo.');
+    }
+  };
 
   const handleDeleteContent = async (contentId: string) => {
     try {
@@ -147,6 +182,16 @@ export default function FolderDetailsPage() {
                     {dropdownsOpen[content.id] && (
                       <div className="absolute right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg w-28 z-10">
                         <button
+                          className="block w-full px-4 py-2 text-sm text-orange-400 hover:bg-gray-100 text-left"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditContent({ id: content.id, titulo: content.titulo });
+                            setIsEditModalOpen(true);
+                          }}
+                        >
+                          Editar
+                        </button>
+                        <button
                           className="block w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 text-left"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -166,6 +211,39 @@ export default function FolderDetailsPage() {
           ))
         )}
       </div>
+
+      {/* Modal para editar conteúdo */}
+      {isEditModalOpen && editContent && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-lg font-semibold mb-4">Editar Conteúdo</h2>
+            <input
+              type="text"
+              placeholder="Título do Conteúdo"
+              value={editContent.titulo}
+              onChange={(e) => setEditContent((prev) => ({ ...prev!, titulo: e.target.value }))}
+              className="w-full p-2 border border-gray-300 rounded-lg mb-4"
+            />
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditContent(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEditContent}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

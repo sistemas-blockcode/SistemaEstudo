@@ -22,16 +22,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Conteúdo não encontrado.' });
     }
 
-    // Retornar o conteúdo como uma resposta de arquivo
-    const buffer = Buffer.from(content.url!, 'base64'); // Decodifica o conteúdo em base64 para binário
+    // Decodificar o conteúdo em base64
+    const buffer = Buffer.from(content.url!, 'base64');
 
-    // Determina o tipo de conteúdo com base no tipo armazenado no banco de dados
+    // Mapear o tipo do conteúdo para o Content-Type apropriado
     let contentType = 'application/octet-stream'; // Valor padrão
-    if (content.tipo === 'PDF') contentType = 'application/pdf';
-    if (content.tipo === 'VIDEO') contentType = 'video/mp4';
+    let fileExtension = ''; // Extensão do arquivo padrão
+    switch (content.tipo) {
+      case 'PDF':
+        contentType = 'application/pdf';
+        fileExtension = '.pdf';
+        break;
+      case 'DOCX':
+        contentType =
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        fileExtension = '.docx';
+        break;
+      case 'PPTX':
+        contentType =
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        fileExtension = '.pptx';
+        break;
+      case 'IMG':
+        contentType = content.titulo.endsWith('.png') ? 'image/png' : 'image/jpeg';
+        fileExtension = content.titulo.endsWith('.png') ? '.png' : '.jpg';
+        break;
+      case 'VIDEO':
+        contentType = 'video/mp4';
+        fileExtension = '.mp4';
+        break;
+      default:
+        break;
+    }
 
+    // Configurar cabeçalhos de resposta
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `inline; filename="${content.titulo}"`); // Abre o arquivo no navegador
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${content.titulo}${fileExtension}"` // Força o download com a extensão correta
+    );
+
+    // Enviar o arquivo como resposta
     res.status(200).send(buffer);
   } catch (error) {
     console.error('Erro ao buscar conteúdo:', error);

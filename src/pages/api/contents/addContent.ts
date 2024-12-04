@@ -11,13 +11,24 @@ export const config = {
   },
 };
 
+// Define o tipo das chaves como valores válidos de ContentType
+const SUPPORTED_FILE_TYPES: Record<ContentType, string[]> = {
+  PDF: ['application/pdf'],
+  DOCX: [
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+  ],
+  PPTX: ['application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+  IMG: ['image/jpeg', 'image/png'],
+  VIDEO: ['video/mp4', 'video/quicktime'],
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: 'Método não permitido. Use POST.' });
   }
 
-  // Configuração de `formidable`
   const form = formidable({
     maxFileSize: 10 * 1024 * 1024, // Define o limite máximo para cada arquivo como 10 MB
     maxTotalFileSize: 20 * 1024 * 1024, // Limite máximo total de todos os arquivos como 20 MB
@@ -43,16 +54,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
       }
 
-      if (!Object.values(ContentType).includes(tipoArquivo as ContentType)) {
+      if (!Object.keys(SUPPORTED_FILE_TYPES).includes(tipoArquivo)) {
         return res.status(400).json({ error: 'Tipo de arquivo inválido.' });
       }
 
-      // Ler o arquivo como buffer e salvar no banco
-      const fileBuffer = arquivo ? await fs.promises.readFile((arquivo as File).filepath) : null;
+      const file = arquivo as File;
+      const fileType = file.mimetype || '';
 
-      if (!fileBuffer) {
-        return res.status(400).json({ error: 'Erro ao ler o arquivo.' });
+      // Verificar se o tipo do arquivo é suportado
+      if (!SUPPORTED_FILE_TYPES[tipoArquivo as ContentType]?.includes(fileType)) {
+        return res.status(400).json({
+          error: `Tipo de arquivo incompatível para ${tipoArquivo}. Tipos suportados: ${SUPPORTED_FILE_TYPES[
+            tipoArquivo as ContentType
+          ]?.join(', ')}`,
+        });
       }
+
+      const fileBuffer = await fs.promises.readFile(file.filepath);
 
       try {
         const content = await prisma.content.create({

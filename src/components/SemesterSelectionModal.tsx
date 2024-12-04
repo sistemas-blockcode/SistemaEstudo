@@ -50,15 +50,15 @@ export default function SemesterSelectionModal({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "user-id": user.id, // Enviando o ID do usuário
+          "user-id": user.id,
         },
         body: JSON.stringify({ semesterId: selectedSemester }),
       });
   
       if (!response.ok) throw new Error("Erro ao atualizar semestre.");
   
-      setIsOpen(false); // Fecha o modal após seleção
-      router.refresh(); // Atualiza os dados da página
+      setIsOpen(false);
+      router.refresh();
     } catch (error) {
       console.error("Erro ao atualizar semestre:", error);
       alert("Erro ao salvar o semestre.");
@@ -73,7 +73,7 @@ export default function SemesterSelectionModal({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-lg font-semibold mb-4">Selecione seu Semestre</h2>
+        <h2 className="text-lg font-semibold mb-4">Selecione seu Período</h2>
         <div className="space-y-4">
           <select
             value={selectedSemester}
