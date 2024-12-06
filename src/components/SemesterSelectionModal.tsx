@@ -81,11 +81,11 @@ export default function SemesterSelectionModal({
             className="block w-full p-2 border border-gray-300 rounded-lg"
           >
             <option value="" disabled>
-              Escolha seu semestre
+              Escolha seu período
             </option>
             {semesters.map((semester) => (
               <option key={semester.id} value={semester.id}>
-                Semestre {semester.numero}
+                {semester.numero} período
               </option>
             ))}
           </select>

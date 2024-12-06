@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import Sidebar from '@/components/sidebar';
 import { Toaster } from '@/components/ui/toaster';
-import SemesterSelectionWrapper from '@/components/SemesterSelectionWrapper';
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,10 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1 bg-gray-100 p-6">
-        <SemesterSelectionWrapper >
           {children}
-        </SemesterSelectionWrapper>
-
         <Toaster />
       </div>
     </div>
