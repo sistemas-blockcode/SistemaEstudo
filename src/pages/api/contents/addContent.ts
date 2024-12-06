@@ -21,7 +21,12 @@ const SUPPORTED_FILE_TYPES: Record<ContentType, string[]> = {
   PPTX: ['application/vnd.openxmlformats-officedocument.presentationml.presentation'],
   IMG: ['image/jpeg', 'image/png'],
   VIDEO: ['video/mp4', 'video/quicktime'],
+  XLSX: [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+  ],
 };
+
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {

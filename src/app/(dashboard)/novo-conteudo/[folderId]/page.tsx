@@ -97,6 +97,7 @@ export default function NovoConteudoPage() {
             <option value="IMG">Imagem (JPG, PNG)</option>
             <option value="VIDEO">Vídeo</option>
             <option value="PPTX">Apresentação PowerPoint</option>
+            <option value="XLSX">Planilha Excel</option>
           </select>
         </div>
 

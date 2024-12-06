@@ -36,11 +36,6 @@ export default function AdicionarSimuladoPage() {
         setSubjects(subjectsData);
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
-        toast({
-          title: 'Erro',
-          description: 'Falha ao carregar usuário ou matérias.',
-          variant: 'destructive',
-        });
       }
     }
     fetchUserAndSubjects();

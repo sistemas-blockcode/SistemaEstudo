@@ -22,12 +22,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Conteúdo não encontrado.' });
     }
 
-    // Decodificar o conteúdo em base64
     const buffer = Buffer.from(content.url!, 'base64');
 
-    // Mapear o tipo do conteúdo para o Content-Type apropriado
-    let contentType = 'application/octet-stream'; // Valor padrão
-    let fileExtension = ''; // Extensão do arquivo padrão
+    let contentType = 'application/octet-stream';
+    let fileExtension = '';
     switch (content.tipo) {
       case 'PDF':
         contentType = 'application/pdf';
@@ -51,18 +49,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         contentType = 'video/mp4';
         fileExtension = '.mp4';
         break;
+      case 'XLSX':
+        contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        fileExtension = '.xlsx';
+        break;
       default:
         break;
     }
-
-    // Configurar cabeçalhos de resposta
+    
     res.setHeader('Content-Type', contentType);
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${content.titulo}${fileExtension}"` // Força o download com a extensão correta
+      `attachment; filename="${content.titulo}${fileExtension}"` 
     );
 
-    // Enviar o arquivo como resposta
     res.status(200).send(buffer);
   } catch (error) {
     console.error('Erro ao buscar conteúdo:', error);

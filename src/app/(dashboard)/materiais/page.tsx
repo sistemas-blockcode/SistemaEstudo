@@ -78,7 +78,10 @@ export default function MaterialsPage() {
   useEffect(() => {
     async function fetchFolders() {
       try {
-        const response = await fetch('/api/folders/getFolders');
+        const response = await fetch('/api/folders/getFolders', {
+          headers: { 'user-id': localStorage.getItem('userId') || '' },
+        });
+
         if (!response.ok) throw new Error('Erro ao buscar as pastas.');
         const data = await response.json();
         setFolders(data);

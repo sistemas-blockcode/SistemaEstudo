@@ -47,19 +47,17 @@ export default function QAPage() {
 
     async function fetchQuestions() {
       try {
-        // Obter o ID do usuário
-        const userResponse = await fetch('/api/users/getMe');
-        if (!userResponse.ok) throw new Error('Erro ao buscar ID do usuário.');
-        const user = await userResponse.json();
-        const userId = user.id;
-    
-        // Fazer a solicitação de perguntas, enviando o userId como query param
-        const response = await fetch(`/api/qanda/getQuestions?userId=${userId}`);
+        const response = await fetch('/api/qanda/getQuestions');
         if (!response.ok) throw new Error('Erro ao buscar perguntas.');
         const data = await response.json();
-    
-        // Atualizar o estado com as perguntas
-        setQuestions(data.map((q: Question) => ({ ...q, respostas: q.respostas || [] })));
+
+        // Garantindo que respostas seja sempre um array
+        const formattedData = data.map((q: Question) => ({
+          ...q,
+          respostas: Array.isArray(q.respostas) ? q.respostas : [],
+        }));
+
+        setQuestions(formattedData);
       } catch {
         toast({
           title: "Erro ao carregar perguntas",
@@ -70,7 +68,6 @@ export default function QAPage() {
         setLoading(false);
       }
     }
-    
 
     fetchUserProfile();
     fetchQuestions();
@@ -99,10 +96,7 @@ export default function QAPage() {
       return;
     }
 
-    const payload = {
-      ...newQuestion,
-      userId,
-    };
+    const payload = { ...newQuestion, userId };
 
     try {
       const response = await fetch('/api/qanda/addQuestion', {
@@ -171,7 +165,7 @@ export default function QAPage() {
           ? {
               ...prev,
               respostas: [
-                ...prev.respostas,
+                ...(prev.respostas || []),
                 { id: createdResponse.id, autor: { nome: 'Você' }, conteudo: newResponse },
               ],
             }
@@ -180,11 +174,11 @@ export default function QAPage() {
 
       setQuestions((prev) =>
         prev.map((q) =>
-          q.id === selectedQuestion.id
+          q.id === selectedQuestion?.id
             ? {
                 ...q,
                 respostas: [
-                  ...q.respostas,
+                  ...(q.respostas || []),
                   { id: createdResponse.id, autor: { nome: 'Você' }, conteudo: newResponse },
                 ],
               }

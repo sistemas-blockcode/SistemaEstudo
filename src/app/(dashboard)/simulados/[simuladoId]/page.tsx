@@ -73,6 +73,10 @@ export default function SimuladoDetalhes({ params }: { params: { simuladoId: str
   }
 
   if (isResultScreen) {
+    const totalQuestions = score.correct + score.incorrect;
+    const correctPercentage = ((score.correct / totalQuestions) * 100).toFixed(2);
+    const incorrectPercentage = ((score.incorrect / totalQuestions) * 100).toFixed(2);
+
     return (
       <div className="p-6 bg-gray-100 rounded-lg max-w-4xl mx-auto text-center">
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">Resultados do Simulado</h1>
@@ -83,10 +87,12 @@ export default function SimuladoDetalhes({ params }: { params: { simuladoId: str
           <div className="p-4 bg-green-100 text-green-600 rounded-lg shadow">
             <p className="text-2xl font-bold">{score.correct}</p>
             <p className="text-sm font-medium">Acertos</p>
+            <p className="text-sm font-medium">{correctPercentage}%</p>
           </div>
           <div className="p-4 bg-red-100 text-red-600 rounded-lg shadow">
             <p className="text-2xl font-bold">{score.incorrect}</p>
             <p className="text-sm font-medium">Erros</p>
+            <p className="text-sm font-medium">{incorrectPercentage}%</p>
           </div>
         </div>
         <button

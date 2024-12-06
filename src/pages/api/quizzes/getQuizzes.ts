@@ -14,7 +14,6 @@ export default async function handler(
     const { id, subjectId, createdBy } = req.query;
 
     if (id) {
-      // Busca um único simulado pelo ID
       const quiz = await prisma.quiz.findUnique({
         where: { id: id as string },
         include: {
