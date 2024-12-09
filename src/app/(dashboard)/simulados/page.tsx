@@ -11,13 +11,14 @@ export default function SimuladosPage() {
   const [dropdownsOpen, setDropdownsOpen] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedSimulado, setSelectedSimulado] = useState<{ id: string; titulo: string } | null>(
-    null
-  );
+  const [selectedSimulado, setSelectedSimulado] = useState<{
+    id: string;
+    titulo: string;
+    descricao: string;
+  } | null>(null);
   const [questions, setQuestions] = useState<
-    { id: string; enunciado: string; alternativas: string[]; respostaCorreta: string }[]
+    { enunciado: string; alternativas: string[]; respostaCorreta: string }[]
   >([]);
-  const [newTitulo, setNewTitulo] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -49,13 +50,35 @@ export default function SimuladosPage() {
     fetchSimulados();
   }, []);
 
+  const handleDeleteQuiz = async (simuladoId: string) => {
+    if (!window.confirm('Tem certeza de que deseja excluir este simulado?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/quizzes/deleteQuiz?id=${simuladoId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao excluir o simulado');
+      }
+
+      setSimulados((prev) => prev.filter((simulado) => simulado.id !== simuladoId));
+      alert('Simulado excluído com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir o simulado:', error);
+      alert('Erro ao excluir o simulado. Tente novamente mais tarde.');
+    }
+  };
+
   const handleOpenEditModal = async (simuladoId: string) => {
     try {
       const response = await fetch(`/api/quizzes/getQuizzes?id=${simuladoId}`);
       if (!response.ok) throw new Error('Erro ao buscar perguntas do simulado');
       const data = await response.json();
 
-      setSelectedSimulado({ id: data.id, titulo: data.titulo });
+      setSelectedSimulado({ id: data.id, titulo: data.titulo, descricao: data.descricao });
       setQuestions(data.questions);
       setIsModalOpen(true);
     } catch (error) {
@@ -63,21 +86,51 @@ export default function SimuladosPage() {
     }
   };
 
-  const handleSaveQuestions = async () => {
+  const handleSaveSimulado = async () => {
+    if (!selectedSimulado?.titulo || !selectedSimulado.descricao) {
+      alert('Preencha o título e a descrição do simulado.');
+      return;
+    }
+
+    const perguntasValidas = questions.every(
+      (question) =>
+        question.enunciado &&
+        question.alternativas.every((alt) => alt) &&
+        question.respostaCorreta
+    );
+
+    if (!perguntasValidas) {
+      alert('Certifique-se de que todas as perguntas estão completas.');
+      return;
+    }
+
     try {
       const response = await fetch('/api/quizzes/editQuiz', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: selectedSimulado?.id, questions }),
+        body: JSON.stringify({ ...selectedSimulado, questions }),
       });
 
-      if (!response.ok) throw new Error('Erro ao salvar perguntas');
+      if (!response.ok) throw new Error('Erro ao salvar simulado');
       setIsModalOpen(false);
       setSelectedSimulado(null);
       setQuestions([]);
+      alert('Simulado atualizado com sucesso!');
     } catch (error) {
-      console.error('Erro ao salvar perguntas:', error);
+      console.error('Erro ao salvar simulado:', error);
+      alert('Erro ao salvar simulado. Tente novamente.');
     }
+  };
+
+  const handleAddQuestion = () => {
+    setQuestions((prev) => [
+      ...prev,
+      { enunciado: '', alternativas: ['', '', '', ''], respostaCorreta: '' },
+    ]);
+  };
+
+  const handleRemoveQuestion = (index: number) => {
+    setQuestions((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleChangeQuestion = (index: number, field: string, value: string) => {
@@ -160,6 +213,7 @@ export default function SimuladosPage() {
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleDropdown(simulado.id);
+                          handleDeleteQuiz(simulado.id);
                         }}
                       >
                         Excluir
@@ -184,39 +238,94 @@ export default function SimuladosPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-md w-96">
-            <h2 className="text-xl font-semibold mb-4">Editar Perguntas</h2>
-            <div className="space-y-4">
+          <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-4xl h-auto max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-6">Editar Simulado</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Título e Descrição */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Título</label>
+                <input
+                  type="text"
+                  value={selectedSimulado?.titulo || ''}
+                  placeholder="Título"
+                  className="w-full p-2 mt-1 border border-gray-300 rounded-lg"
+                  onChange={(e) =>
+                    setSelectedSimulado((prev) =>
+                      prev ? { ...prev, titulo: e.target.value } : prev
+                    )
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Descrição</label>
+                <textarea
+                  value={selectedSimulado?.descricao || ''}
+                  placeholder="Descrição"
+                  className="w-full p-2 mt-1 border border-gray-300 rounded-lg"
+                  rows={4}
+                  onChange={(e) =>
+                    setSelectedSimulado((prev) =>
+                      prev ? { ...prev, descricao: e.target.value } : prev
+                    )
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Perguntas */}
+            <div className="p-4 border rounded-lg bg-gray-50">
+              <h3 className="text-lg font-semibold mb-4">Perguntas</h3>
               {questions.map((question, index) => (
-                <div key={index} className="p-4 border rounded-lg bg-gray-50 space-y-2">
+                <div key={index} className="p-4 border rounded-lg bg-white mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Enunciado</label>
                   <input
                     type="text"
                     value={question.enunciado}
                     placeholder="Enunciado"
-                    className="w-full p-2 border border-gray-300 rounded-lg"
+                    className="w-full p-2 mt-1 border border-gray-300 rounded-lg mb-4"
                     onChange={(e) => handleChangeQuestion(index, 'enunciado', e.target.value)}
                   />
                   {question.alternativas.map((alt, i) => (
-                    <input
-                      key={i}
-                      type="text"
-                      value={alt}
-                      placeholder={`Alternativa ${String.fromCharCode(65 + i)}`}
-                      className="w-full p-2 border border-gray-300 rounded-lg"
-                      onChange={(e) => handleChangeAlternative(index, i, e.target.value)}
-                    />
+                    <div key={i} className="mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Alternativa {String.fromCharCode(65 + i)}
+                      </label>
+                      <input
+                        type="text"
+                        value={alt}
+                        placeholder={`Alternativa ${String.fromCharCode(65 + i)}`}
+                        className="w-full p-2 mt-1 border border-gray-300 rounded-lg"
+                        onChange={(e) => handleChangeAlternative(index, i, e.target.value)}
+                      />
+                    </div>
                   ))}
+                  <label className="block text-sm font-medium text-gray-700 mt-4">Resposta Correta</label>
                   <input
                     type="text"
                     value={question.respostaCorreta}
                     placeholder="Resposta Correta"
-                    className="w-full p-2 border border-gray-300 rounded-lg"
+                    className="w-full p-2 mt-1 border border-gray-300 rounded-lg"
                     onChange={(e) => handleChangeQuestion(index, 'respostaCorreta', e.target.value)}
                   />
+                  <button
+                    onClick={() => handleRemoveQuestion(index)}
+                    className="text-red-600 text-sm mt-2 hover:underline"
+                  >
+                    Remover Pergunta
+                  </button>
                 </div>
               ))}
+              <button
+                onClick={handleAddQuestion}
+                className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              >
+                Adicionar Pergunta
+              </button>
             </div>
-            <div className="flex justify-end gap-4 mt-4">
+
+            {/* Ações */}
+            <div className="flex justify-end gap-4 mt-6">
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
@@ -224,10 +333,10 @@ export default function SimuladosPage() {
                 Cancelar
               </button>
               <button
-                onClick={handleSaveQuestions}
+                onClick={handleSaveSimulado}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
               >
-                Salvar
+                Salvar Alterações
               </button>
             </div>
           </div>
