@@ -22,23 +22,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Atualizar perguntas, se enviadas
+    // Atualizar ou criar perguntas, se enviadas
     if (questions && Array.isArray(questions)) {
       for (const question of questions) {
         const { id: questionId, enunciado, alternativas, respostaCorreta } = question;
 
-        if (!questionId || !enunciado || !alternativas || !respostaCorreta) {
-          return res.status(400).json({ error: 'Dados incompletos para atualizar perguntas.' });
+        if (!enunciado || !alternativas || !respostaCorreta) {
+          return res.status(400).json({ error: 'Dados incompletos para perguntas.' });
         }
 
-        await prisma.quizQuestion.update({
-          where: { id: questionId },
-          data: {
-            enunciado,
-            alternativas,
-            respostaCorreta,
-          },
-        });
+        if (questionId) {
+          // Atualizar pergunta existente
+          await prisma.quizQuestion.update({
+            where: { id: questionId },
+            data: {
+              enunciado,
+              alternativas,
+              respostaCorreta,
+            },
+          });
+        } else {
+          // Criar nova pergunta
+          await prisma.quizQuestion.create({
+            data: {
+              enunciado,
+              alternativas,
+              respostaCorreta,
+              quizId: id, // Vincula à ID do simulado
+            },
+          });
+        }
       }
     }
 
