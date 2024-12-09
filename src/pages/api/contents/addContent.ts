@@ -35,10 +35,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const form = formidable({
-    maxFileSize: 10 * 1024 * 1024, // Define o limite máximo para cada arquivo como 10 MB
-    maxTotalFileSize: 20 * 1024 * 1024, // Limite máximo total de todos os arquivos como 20 MB
+    maxFileSize: 200 * 1024 * 1024, // Define o limite máximo para cada arquivo como 200 MB
+    maxTotalFileSize: 200 * 1024 * 1024, // Define o limite máximo total de todos os arquivos como 200 MB
     filename: () => `${uuidv4()}`, // Gera um nome único para cada arquivo
-  });
+  });  
 
   try {
     form.parse(req, async (err, fields, files) => {
