@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { 
   IconFolder, 
   IconFileAnalytics, 
-  IconMessages, 
+  IconHelpCircle,
   IconCalendarEvent, 
   IconAlertCircle 
 } from '@tabler/icons-react';
@@ -103,10 +103,10 @@ export default function DashboardOverview() {
           </button>
           <button
             className="flex flex-col items-center w-52 h-24 px-4 py-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
-            onClick={() => router.push('/chat')}
+            onClick={() => router.push('/qa')}
           >
-            <IconMessages size={32} />
-            <span className="mt-2">Chat</span>
+            <IconHelpCircle size={32} />
+            <span className="mt-2">Fórum</span>
           </button>
           <button
             className="flex flex-col items-center w-52 h-24 px-4 py-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
