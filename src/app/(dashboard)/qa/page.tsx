@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { IconX } from '@tabler/icons-react';
+import { IconX, IconTrash } from '@tabler/icons-react';
 import { useToast } from "@/hooks/use-toast";
 
 interface Question {
@@ -27,6 +27,7 @@ export default function QAPage() {
   const [filter, setFilter] = useState({ subject: '', semester: '' });
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export default function QAPage() {
         if (!response.ok) throw new Error('Erro ao buscar perfil do usuário.');
         const data = await response.json();
         setUserId(data.id);
+        setIsAdmin(data.tipo === 'ADMIN');
       } catch {
         toast({
           title: "Erro ao carregar perfil",
@@ -51,7 +53,6 @@ export default function QAPage() {
         if (!response.ok) throw new Error('Erro ao buscar perguntas.');
         const data = await response.json();
 
-        // Garantindo que respostas seja sempre um array
         const formattedData = data.map((q: Question) => ({
           ...q,
           respostas: Array.isArray(q.respostas) ? q.respostas : [],
@@ -75,6 +76,34 @@ export default function QAPage() {
 
   const handleSelectQuestion = (question: Question) => {
     setSelectedQuestion(question || null);
+  };
+
+  const handleDeleteQuestion = async (perguntaId: string) => {
+    try {
+      const response = await fetch('/api/qanda/deleteQuestion', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ perguntaId, userId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Erro ao excluir a pergunta.');
+      }
+
+      setQuestions((prev) => prev.filter((q) => q.id !== perguntaId));
+      toast({
+        title: "Pergunta excluída",
+        description: "A pergunta foi excluída com sucesso.",
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir pergunta",
+        description: "Ocorreu um erro ao tentar excluir a pergunta.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleQuestionSubmit = async () => {
@@ -220,14 +249,24 @@ export default function QAPage() {
           filteredQuestions.map((question) => (
             <div
               key={question.id}
-              onClick={() => handleSelectQuestion(question)}
-              className="p-3 cursor-pointer hover:bg-gray-200 rounded-lg transition"
+              className="p-3 hover:bg-gray-200 rounded-lg transition flex justify-between items-center"
             >
-              <p className="font-semibold text-gray-800">{question.pergunta}</p>
-              <p className="text-sm text-gray-500">
-                {question.respostas?.length || 0}{' '}
-                {question.respostas?.length === 1 ? 'resposta' : 'respostas'}
-              </p>
+              <div onClick={() => handleSelectQuestion(question)} className="cursor-pointer">
+                <p className="font-semibold text-gray-800">{question.pergunta}</p>
+                <p className="text-sm text-gray-500">
+                  {question.respostas?.length || 0}{' '}
+                  {question.respostas?.length === 1 ? 'resposta' : 'respostas'}
+                </p>
+              </div>
+              {isAdmin && (
+                <button
+                  onClick={() => handleDeleteQuestion(question.id)}
+                  className="text-red-600 hover:text-red-800"
+                  aria-label="Excluir"
+                >
+                  <IconTrash size={20} />
+                </button>
+              )}
             </div>
           ))
         )}

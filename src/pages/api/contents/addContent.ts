@@ -35,8 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const form = formidable({
-    maxFileSize: 200 * 1024 * 1024, // Define o limite máximo para cada arquivo como 200 MB
-    maxTotalFileSize: 2 * 1024 * 1024 * 1024, // Define o limite máximo total de todos os arquivos como 2 GB
+    maxFileSize: 300 * 1024 * 1024, // Define o limite máximo para cada arquivo como 200 MB
+    maxTotalFileSize: 5 * 1024 * 1024 * 1024, // Define o limite máximo total de todos os arquivos como 2 GB
     filename: () => `${uuidv4()}`, // Gera um nome único para cada arquivo
   });  
 
