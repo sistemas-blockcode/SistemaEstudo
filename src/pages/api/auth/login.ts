@@ -8,29 +8,40 @@ export default async function loginHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log("Requisição recebida em /api/auth/login"); // Log inicial
+
   if (req.method !== "POST") {
+    console.log("Método não permitido:", req.method); // Log do método inválido
     return res.status(405).json({ error: "Método não permitido" });
   }
 
   const { email, password } = req.body;
+  console.log("Dados recebidos no login:", { email, password }); // Log dos dados recebidos
 
   try {
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
+    console.log("Usuário encontrado:", user); // Log do usuário encontrado
+
     if (!user) {
-      return res.status(404).json({ error: "Usuário não encontrado" });
+      console.log("Erro: Usuário não encontrado"); // Log do erro
+      return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.senha);
+    console.log("Senha válida:", isPasswordValid); // Log da validação da senha
+
     if (!isPasswordValid) {
-      return res.status(401).json({ error: "Senha incorreta" });
+      console.log("Erro: Senha incorreta"); // Log do erro
+      return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
       expiresIn: "1h",
     });
+    console.log("Token JWT gerado:", token); // Log do token gerado
 
     res.setHeader(
       "Set-Cookie",
@@ -43,12 +54,13 @@ export default async function loginHandler(
       })
     );
 
+    console.log("Cookie authToken configurado"); // Log do cookie configurado
     return res.status(200).json({
       message: "Login bem-sucedido",
       redirectTo: "/home",
     });
   } catch (error) {
-    console.error("Erro ao fazer login:", error);
+    console.error("Erro ao fazer login:", error); // Log do erro
     return res.status(500).json({ error: "Erro ao fazer login" });
   }
 }
