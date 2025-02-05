@@ -1,5 +1,6 @@
 import  prisma  from '@/lib/prisma';
 import SemesterModal from '@/components/SemesterModal';
+export const dynamic = 'force-dynamic';
 
 export default async function SelectSemesterPage() {
   const semesters = await prisma.semester.findMany({
