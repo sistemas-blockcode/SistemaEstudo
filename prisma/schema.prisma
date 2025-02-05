@@ -15,15 +15,23 @@ model User {
   matricula          String
   tipo               UserType
   selectedSemesterId String? 
-  selectedSemester   Semester? @relation("UserToSemester", fields: [selectedSemesterId], references: [id]) // Relação direta
+  selectedSemester   Semester? @relation("UserToSemester", fields: [selectedSemesterId], references: [id])
   createdAt          DateTime @default(now())
+  
+  // Relações com Message
+  MessageSent        Message[] @relation("UserToMessage")
+  MessageReceived    Message[] @relation("MessageTo")
+  
+  // Outras relações
   QuizAnswer         QuizAnswer[]
-  Message            Message[]
   Event              Event[]
   QandA              QandA[]
   Folders            Folder[]
   Respostas          Resposta[]
+  quizzes            Quiz[]    @relation("UserToQuiz") // Relação inversa (opcional)
+  socketId           String?
 }
+
 
 enum UserType {
   ADMIN
@@ -34,8 +42,15 @@ model Semester {
   id          String     @id @default(uuid())
   numero      Int
   descricao   String?
+  
+  // Relações
   subjects    Subject[]
-  users       User[]      @relation("UserToSemester") // Relação inversa
+  users       User[]     @relation("UserToSemester")
+  folders     Folder[]   @relation("SemesterToFolder")
+  quizzes     Quiz[]     @relation("SemesterToQuiz")
+  events      Event[]    @relation("SemesterToEvent")
+  qandas      QandA[]    @relation("SemesterToQandA") // Relação com QandA
+  messages    Message[]  @relation("SemesterToMessage") // Relação com Message
 }
 
 model Subject {
@@ -50,12 +65,14 @@ model Subject {
 }
 
 model Folder {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  createdBy String?
-  user      User?   @relation(fields: [createdBy], references: [id])
-  contents  Content[]
+  id          String     @id @default(uuid())
+  name        String     @unique
+  createdAt   DateTime   @default(now())
+  createdBy   String?
+  user        User?      @relation(fields: [createdBy], references: [id])
+  contents    Content[]
+  semesterId  String     // Novo campo para relação
+  semester    Semester   @relation("SemesterToFolder", fields: [semesterId], references: [id])
 }
 
 model Content {
@@ -80,12 +97,15 @@ enum ContentType {
 }
 
 model Quiz {
-  id          String     @id @default(uuid())
+  id          String         @id @default(uuid())
   titulo      String
   descricao   String
-  createdBy   String     
+  createdBy   String?        // Opcional
+  user        User?          @relation("UserToQuiz", fields: [createdBy], references: [id])
   subjectId   String?
-  subject     Subject?    @relation(fields: [subjectId], references: [id])
+  subject     Subject?       @relation(fields: [subjectId], references: [id])
+  semesterId  String          // Novo campo para relação
+  semester    Semester       @relation("SemesterToQuiz", fields: [semesterId], references: [id])
   questions   QuizQuestion[]
   answers     QuizAnswer[]  
 }
@@ -123,6 +143,8 @@ model QandA {
   subjectId    String?
   subject      Subject?   @relation(fields: [subjectId], references: [id])
   respostas    Resposta[]
+  semesterId   String     // Novo campo para relação
+  semester     Semester   @relation("SemesterToQandA", fields: [semesterId], references: [id])
 }
 
 model Resposta {
@@ -136,11 +158,17 @@ model Resposta {
 }
 
 model Message {
-  id          String     @id @default(uuid())
-  conteudo    String
-  dataEnvio   DateTime   @default(now())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
+  id         String   @id @default(uuid())
+  conteudo   String
+  dataEnvio  DateTime @default(now())
+  user       User     @relation("UserToMessage", fields: [userId], references: [id])
+  userId     String
+  to         User     @relation("MessageTo", fields: [toId], references: [id])
+  toId       String
+  semester   Semester @relation("SemesterToMessage", fields: [semesterId], references: [id])
+  semesterId String
+
+  @@index([userId, toId])
 }
 
 model Event {
@@ -151,4 +179,6 @@ model Event {
   createdBy   String    
   userId      String
   user        User       @relation(fields: [userId], references: [id])
+  semesterId  String 
+  semester    Semester   @relation("SemesterToEvent", fields: [semesterId], references: [id])
 }

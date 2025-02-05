@@ -1,3 +1,5 @@
+// /pages/materiais.tsx
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -7,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 interface FolderProps {
   id: string;
   name: string;
+  contents: any[]; // Ajuste o tipo conforme sua necessidade
   onClick: () => void;
   onDelete: () => void;
   onEdit: () => void;
@@ -66,7 +69,7 @@ function Folder({ id, name, onClick, onDelete, onEdit, isAdmin }: FolderProps) {
 }
 
 export default function MaterialsPage() {
-  const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
+  const [folders, setFolders] = useState<{ id: string; name: string; contents: any[] }[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
@@ -77,33 +80,79 @@ export default function MaterialsPage() {
 
   useEffect(() => {
     async function fetchFolders() {
+      console.log('Iniciando fetchFolders...');
       try {
         const response = await fetch('/api/folders/getFolders', {
-          headers: { 'user-id': localStorage.getItem('userId') || '' },
+          method: 'GET',
+          credentials: 'include', // Inclui cookies na requisição
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
         });
 
-        if (!response.ok) throw new Error('Erro ao buscar as pastas.');
+        console.log(`Resposta da API (status: ${response.status}):`, response);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Erro ao buscar as pastas:', errorData);
+          toast({
+            title: 'Erro',
+            description: `Erro ao buscar as pastas: ${errorData.error || 'Desconhecido'}`,
+            variant: 'destructive',
+          });
+          return;
+        }
+
         const data = await response.json();
+        console.log('Dados recebidos da API:', data);
         setFolders(data);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erro ao buscar pastas:', error);
+        toast({
+          title: 'Erro',
+          description: 'Ocorreu um erro ao buscar as pastas.',
+          variant: 'destructive',
+        });
       }
     }
 
     async function fetchProfile() {
+      console.log('Iniciando fetchProfile...');
       try {
-        const response = await fetch('/api/users/getMe');
-        if (!response.ok) throw new Error('Erro ao buscar informações do usuário.');
+        const response = await fetch('/api/users/getMeNew', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        console.log(`Resposta da API (status: ${response.status}):`, response);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Erro ao buscar informações do usuário:', errorData);
+          toast({
+            title: 'Erro',
+            description: `Erro ao buscar informações do usuário: ${errorData.error || 'Desconhecido'}`,
+            variant: 'destructive',
+          });
+          return;
+        }
+
         const profile = await response.json();
+        console.log('Perfil do usuário recebido:', profile);
         setIsAdmin(profile.tipo === 'ADMIN');
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erro ao buscar perfil do usuário:', error);
+        toast({
+          title: 'Erro',
+          description: 'Ocorreu um erro ao buscar o perfil do usuário.',
+          variant: 'destructive',
+        });
       }
     }
 
     fetchFolders();
     fetchProfile();
-  }, []);
+  }, [toast]);
 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) {
@@ -115,16 +164,30 @@ export default function MaterialsPage() {
       return;
     }
 
+    console.log('Criando nova pasta:', folderName);
     try {
       const response = await fetch('/api/folders/addFolder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: folderName }),
+        credentials: 'include', // Inclui cookies na requisição
       });
 
-      if (!response.ok) throw new Error('Erro ao criar a pasta.');
+      console.log(`Resposta da API ao criar pasta (status: ${response.status}):`, response);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erro ao criar a pasta:', errorData);
+        toast({
+          title: 'Erro',
+          description: `Erro ao criar a pasta: ${errorData.error || 'Desconhecido'}`,
+          variant: 'destructive',
+        });
+        return;
+      }
 
       const newFolder = await response.json();
+      console.log('Nova pasta criada:', newFolder);
       setFolders([...folders, newFolder]);
       setFolderName('');
       setIsCreateModalOpen(false);
@@ -133,7 +196,7 @@ export default function MaterialsPage() {
         description: 'A pasta foi criada com sucesso.',
         variant: 'success',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar pasta:', error);
       toast({
         title: 'Erro',
@@ -144,20 +207,34 @@ export default function MaterialsPage() {
   };
 
   const handleDeleteFolder = async (folderId: string) => {
+    console.log(`Excluindo pasta com ID: ${folderId}`);
     try {
       const response = await fetch(`/api/folders/deleteFolder?id=${folderId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
-      if (!response.ok) throw new Error('Erro ao excluir a pasta.');
+      console.log(`Resposta da API ao excluir pasta (status: ${response.status}):`, response);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erro ao excluir a pasta:', errorData);
+        toast({
+          title: 'Erro',
+          description: `Erro ao excluir a pasta: ${errorData.error || 'Desconhecido'}`,
+          variant: 'destructive',
+        });
+        return;
+      }
 
       setFolders((prev) => prev.filter((folder) => folder.id !== folderId));
+      console.log(`Pasta com ID ${folderId} excluída com sucesso.`);
       toast({
         title: 'Sucesso',
         description: 'A pasta foi excluída com sucesso.',
         variant: 'success',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao excluir pasta:', error);
       toast({
         title: 'Erro',
@@ -177,17 +254,34 @@ export default function MaterialsPage() {
       return;
     }
 
+    console.log(`Editando pasta com ID: ${editingFolderId}, Novo nome: ${folderName}`);
     try {
       const response = await fetch(`/api/folders/updateFolder`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: editingFolderId, name: folderName }),
+        credentials: 'include',
       });
 
-      if (!response.ok) throw new Error('Erro ao editar a pasta.');
+      console.log(`Resposta da API ao editar pasta (status: ${response.status}):`, response);
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erro ao editar a pasta:', errorData);
+        toast({
+          title: 'Erro',
+          description: `Erro ao editar a pasta: ${errorData.error || 'Desconhecido'}`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const updatedFolder = await response.json();
+      console.log('Pasta atualizada:', updatedFolder);
       setFolders((prev) =>
-        prev.map((folder) => (folder.id === editingFolderId ? { ...folder, name: folderName } : folder))
+        prev.map((folder) =>
+          folder.id === editingFolderId ? { ...folder, name: folderName } : folder
+        )
       );
       setFolderName('');
       setEditingFolderId(null);
@@ -197,7 +291,7 @@ export default function MaterialsPage() {
         description: 'A pasta foi editada com sucesso.',
         variant: 'success',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao editar pasta:', error);
       toast({
         title: 'Erro',
@@ -208,6 +302,7 @@ export default function MaterialsPage() {
   };
 
   const handleFolderClick = (folderId: string) => {
+    console.log(`Navegando para a pasta com ID: ${folderId}`);
     router.push(`/materiais/${folderId}`);
   };
 
@@ -222,6 +317,7 @@ export default function MaterialsPage() {
               onClick={() => {
                 setFolderName('');
                 setIsCreateModalOpen(true);
+                console.log('Abrindo modal para criar nova pasta.');
               }}
             >
               <IconPlus size={15} />
@@ -237,12 +333,14 @@ export default function MaterialsPage() {
             key={folder.id}
             id={folder.id}
             name={folder.name}
+            contents={folder.contents}
             onClick={() => handleFolderClick(folder.id)}
             onDelete={() => handleDeleteFolder(folder.id)}
             onEdit={() => {
               setEditingFolderId(folder.id);
               setFolderName(folder.name);
               setIsEditModalOpen(true);
+              console.log(`Abrindo modal para editar pasta com ID: ${folder.id}`);
             }}
             isAdmin={isAdmin}
           />
@@ -259,12 +357,18 @@ export default function MaterialsPage() {
               placeholder="Nome da Pasta"
               className="p-2 border border-gray-300 rounded-lg w-full mb-4"
               value={folderName}
-              onChange={(e) => setFolderName(e.target.value)}
+              onChange={(e) => {
+                setFolderName(e.target.value);
+                console.log(`Nome da nova pasta alterado: ${e.target.value}`);
+              }}
             />
             <div className="flex justify-end gap-4">
               <button
                 className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  console.log('Fechando modal de criação de pasta.');
+                }}
               >
                 Cancelar
               </button>
@@ -289,12 +393,18 @@ export default function MaterialsPage() {
               placeholder="Novo Nome da Pasta"
               className="p-2 border border-gray-300 rounded-lg w-full mb-4"
               value={folderName}
-              onChange={(e) => setFolderName(e.target.value)}
+              onChange={(e) => {
+                setFolderName(e.target.value);
+                console.log(`Nome da pasta sendo editada alterado: ${e.target.value}`);
+              }}
             />
             <div className="flex justify-end gap-4">
               <button
                 className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
-                onClick={() => setIsEditModalOpen(false)}
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  console.log('Fechando modal de edição de pasta.');
+                }}
               >
                 Cancelar
               </button>
