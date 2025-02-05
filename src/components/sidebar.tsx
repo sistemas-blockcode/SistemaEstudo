@@ -38,7 +38,7 @@ const sidebarData = [
   { icon: IconHome2, label: 'Visão Geral', href: '/home' },
   { icon: IconFolder, label: 'Materiais', href: '/materiais' },
   { icon: IconFileAnalytics, label: 'Simulados', href: '/simulados' },
-  { icon: IconMessage2, label: 'Chat', href: '/chat' },
+  //icon: IconMessage2, label: 'Chat', href: '/chat' ,
   { icon: IconHelpCircle, label: 'Fórum', href: '/qa' },
   { icon: IconCalendarEvent, label: 'Agenda', href: '/agenda' },
   { icon: IconSettings, label: 'Configurações', href: '/configuracoes' },
