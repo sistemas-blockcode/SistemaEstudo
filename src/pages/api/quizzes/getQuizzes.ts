@@ -1,5 +1,8 @@
+// /src/pages/api/quizzes/getQuizzes.ts
+
 import { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/lib/prisma";
+import jwt from "jsonwebtoken";
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,8 +13,48 @@ export default async function handler(
     return res.status(405).json({ error: "Método não permitido. Use GET." });
   }
 
+  // Autenticação do Usuário
+  const authToken = req.cookies.authToken;
+  console.log(`authToken recebido: ${authToken ? "Presente" : "Ausente"}`);
+
+  if (!authToken) {
+    console.log("Erro: Token ausente no cookie.");
+    return res
+      .status(401)
+      .json({ error: "Usuário não autenticado. Token ausente." });
+  }
+
   try {
-    const { id, subjectId, createdBy } = req.query;
+    // Verifica e decodifica o token JWT
+    const decoded = jwt.verify(
+      authToken,
+      process.env.JWT_SECRET!
+    ) as { userId: string };
+    console.log(`Token decodificado. userId: ${decoded.userId}`);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: { selectedSemester: true },
+    });
+
+    console.log(`Usuário encontrado: ${user ? user.email : "Não encontrado"}`);
+
+    if (!user) {
+      console.log("Erro: Usuário não encontrado no banco de dados.");
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    if (!user.selectedSemesterId) {
+      console.log("Erro: Semestre não selecionado pelo usuário.");
+      return res
+        .status(400)
+        .json({ error: "Semestre não selecionado pelo usuário." });
+    }
+
+    const selectedSemesterId = user.selectedSemesterId;
+    console.log(`Semestre selecionado pelo usuário: ${selectedSemesterId}`);
+
+    const { id, subjectId } = req.query;
 
     if (id) {
       const quiz = await prisma.quiz.findUnique({
@@ -25,19 +68,23 @@ export default async function handler(
               respostaCorreta: true,
             },
           },
+          subject: true,
+          user: true,
+          semester: true,
         },
       });
 
-      if (!quiz) {
+      if (!quiz || quiz.semesterId !== selectedSemesterId) {
         return res.status(404).json({ error: "Simulado não encontrado." });
       }
 
       return res.status(200).json(quiz);
     }
 
-    const whereClause: any = {};
+    const whereClause: any = {
+      semesterId: selectedSemesterId, // Filtragem por semestre
+    };
     if (subjectId) whereClause.subjectId = subjectId as string;
-    if (createdBy) whereClause.createdBy = createdBy as string;
 
     const quizzes = await prisma.quiz.findMany({
       where: whereClause,
@@ -49,6 +96,9 @@ export default async function handler(
             alternativas: true,
           },
         },
+        subject: true,
+        user: true,
+        semester: true,
       },
       orderBy: {
         titulo: "asc",
