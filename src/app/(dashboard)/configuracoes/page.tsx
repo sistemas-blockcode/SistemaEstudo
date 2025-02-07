@@ -57,21 +57,23 @@ export default function SettingsPage() {
   }, []);
 
   // Carrega os semestres disponíveis (somente para ADMIN)
-  useEffect(() => {
-    if (profile && profile.tipo === 'ADMIN') {
-      async function fetchSemesters() {
-        try {
-          const response = await fetch('/api/semesters/getSemesters');
-          if (!response.ok) throw new Error('Erro ao buscar semestres');
-          const data = await response.json();
-          setAvailableSemesters(data);
-        } catch (error) {
-          console.error('Erro ao carregar semestres:', error);
-        }
+// Carrega os semestres disponíveis (somente para ADMIN)
+useEffect(() => {
+  if (profile && profile.tipo === 'ADMIN') {
+    const fetchSemesters = async () => {
+      try {
+        const response = await fetch('/api/semesters/getSemesters');
+        if (!response.ok) throw new Error('Erro ao buscar semestres');
+        const data = await response.json();
+        setAvailableSemesters(data);
+      } catch (error) {
+        console.error('Erro ao carregar semestres:', error);
       }
-      fetchSemesters();
-    }
-  }, [profile]);
+    };
+    fetchSemesters();
+  }
+}, [profile]);
+
 
   // Handler para redefinir a senha
   const handlePasswordReset = async () => {
