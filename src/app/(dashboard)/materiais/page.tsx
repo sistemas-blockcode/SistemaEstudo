@@ -20,50 +20,53 @@ function Folder({ id, name, onClick, onDelete, onEdit, isAdmin }: FolderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   return (
-    <div className="relative">
+    <div className="relative w-72">
+      {/* Card: use w-full para preencher o contêiner pai */}
       <div
-        className="flex flex-col items-center justify-center w-72 h-40 bg-white rounded-lg shadow-md cursor-pointer hover:bg-gray-200 transition"
+        className="relative flex flex-col items-center justify-center w-full h-40 bg-white rounded-lg shadow-md cursor-pointer hover:bg-gray-200 transition"
         onClick={onClick}
         data-folder-id={id}
       >
+        {/* Ícone de opções (somente para ADMIN) posicionado no canto superior direito */}
+        {isAdmin && (
+          <div className="absolute top-2 right-2 z-10">
+            <button
+              className="text-gray-600 hover:text-gray-800"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDropdownOpen((prev) => !prev);
+              }}
+            >
+              <IconDotsVertical size={20} />
+            </button>
+            {isDropdownOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg w-28">
+                <button
+                  className="block w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 text-left"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  Excluir
+                </button>
+                <button
+                  className="block w-full px-4 py-2 text-sm text-orange-600 hover:bg-gray-100 text-left"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                >
+                  Editar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <IconFolder size={50} className="text-blue-500" />
         <span className="mt-2 text-sm font-semibold text-gray-700">{name}</span>
       </div>
-      {isAdmin && (
-        <div className="absolute top-2 right-6">
-          <button
-            className="text-gray-600 hover:text-gray-800"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsDropdownOpen((prev) => !prev);
-            }}
-          >
-            <IconDotsVertical size={20} />
-          </button>
-          {isDropdownOpen && (
-            <div className="absolute right-1 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg w-28">
-              <button
-                className="block w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 text-left"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-              >
-                Excluir
-              </button>
-              <button
-                className="block w-full px-4 py-2 text-sm text-orange-600 hover:bg-gray-100 text-left"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
-              >
-                Editar
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

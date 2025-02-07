@@ -17,7 +17,14 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [password, setPassword] = useState({ newPassword: '', confirmPassword: '' });
+  
+  // Estados para o select de troca de semestre (somente para ADMIN)
+  const [availableSemesters, setAvailableSemesters] = useState<
+    { id: string; numero: number; descricao?: string | null }[]
+  >([]);
+  const [selectedSemesterAdmin, setSelectedSemesterAdmin] = useState<string>('');
 
+  // Carrega o perfil do usuário
   useEffect(() => {
     async function fetchProfile() {
       try {
@@ -34,6 +41,7 @@ export default function SettingsPage() {
     fetchProfile();
   }, []);
 
+  // Carrega a lista de usuários
   useEffect(() => {
     async function fetchUsers() {
       try {
@@ -48,6 +56,24 @@ export default function SettingsPage() {
     fetchUsers();
   }, []);
 
+  // Carrega os semestres disponíveis (somente para ADMIN)
+  useEffect(() => {
+    if (profile && profile.tipo === 'ADMIN') {
+      async function fetchSemesters() {
+        try {
+          const response = await fetch('/api/semesters/getSemesters');
+          if (!response.ok) throw new Error('Erro ao buscar semestres');
+          const data = await response.json();
+          setAvailableSemesters(data);
+        } catch (error) {
+          console.error('Erro ao carregar semestres:', error);
+        }
+      }
+      fetchSemesters();
+    }
+  }, [profile]);
+
+  // Handler para redefinir a senha
   const handlePasswordReset = async () => {
     if (password.newPassword !== password.confirmPassword) {
       alert('As senhas não coincidem.');
@@ -59,7 +85,7 @@ export default function SettingsPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': profile?.id || '', // Adiciona o ID do usuário autenticado no cabeçalho
+          'user-id': profile?.id || '',
         },
         body: JSON.stringify({ newPassword: password.newPassword }),
       });
@@ -72,6 +98,33 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Erro ao redefinir senha:', error);
       alert('Erro ao redefinir senha. Tente novamente.');
+    }
+  };
+
+  // Handler para trocar o semestre (ADMIN)
+  const handleSemesterChange = async () => {
+    if (!selectedSemesterAdmin) {
+      alert('Selecione um semestre.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users/selectSemester', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ semesterId: selectedSemesterAdmin }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Erro ao trocar semestre');
+
+      alert('Semestre alterado com sucesso.');
+      // Opcional: atualize o estado do perfil ou dispare um refresh na página
+    } catch (error) {
+      console.error('Erro ao trocar semestre:', error);
+      alert('Erro ao trocar semestre. Tente novamente.');
     }
   };
 
@@ -153,7 +206,9 @@ export default function SettingsPage() {
             type="text"
             placeholder="Nome"
             value={profile?.nome || ''}
-            onChange={(e) => setProfile((prev) => ({ ...prev!, nome: e.target.value }))}
+            onChange={(e) =>
+              setProfile((prev) => ({ ...prev!, nome: e.target.value }))
+            }
             className="p-2 border border-gray-300 rounded-lg"
           />
           <input
@@ -188,14 +243,18 @@ export default function SettingsPage() {
               type="password"
               placeholder="Nova Senha"
               value={password.newPassword}
-              onChange={(e) => setPassword((prev) => ({ ...prev, newPassword: e.target.value }))}
+              onChange={(e) =>
+                setPassword((prev) => ({ ...prev, newPassword: e.target.value }))
+              }
               className="w-full p-2 border border-gray-300 rounded-lg mb-4"
             />
             <input
               type="password"
               placeholder="Confirmar Senha"
               value={password.confirmPassword}
-              onChange={(e) => setPassword((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+              onChange={(e) =>
+                setPassword((prev) => ({ ...prev, confirmPassword: e.target.value }))
+              }
               className="w-full p-2 border border-gray-300 rounded-lg mb-4"
             />
             <div className="flex justify-end gap-4">
@@ -212,6 +271,37 @@ export default function SettingsPage() {
                 Salvar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Seção exclusiva para ADMIN: Trocar Semestre */}
+      {profile?.tipo === 'ADMIN' && (
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Trocar Semestre</h2>
+          <div className="flex items-center gap-4">
+            <select
+              value={selectedSemesterAdmin}
+              onChange={(e) => setSelectedSemesterAdmin(e.target.value)}
+              className="p-2 border border-gray-300 rounded-lg"
+            >
+              <option value="" disabled>
+                Selecione um semestre
+              </option>
+              {availableSemesters.map((semester) => (
+                <option key={semester.id} value={semester.id}>
+                  {`Período ${semester.numero} ${
+                    semester.descricao ? `- ${semester.descricao}` : ''
+                  }`}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleSemesterChange}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              Trocar
+            </button>
           </div>
         </div>
       )}
@@ -239,7 +329,9 @@ export default function SettingsPage() {
                   <tr key={user.id} className="border-t border-gray-200 hover:bg-gray-50 transition">
                     <td className="py-3 px-4 text-gray-700">{index + 1}</td>
                     <td className="py-3 px-4 text-gray-700">{user.nome}</td>
-                    <td className="py-3 px-4 text-gray-700">{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
+                    <td className="py-3 px-4 text-gray-700">
+                      {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                    </td>
                     <td className="py-3 px-4 text-gray-700">{user.tipo}</td>
                     <td className="py-3 px-4 text-gray-700 flex items-center space-x-2">
                       <button
