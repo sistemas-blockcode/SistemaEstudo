@@ -1,5 +1,4 @@
 // /api/folders/getFolderDetails.ts
-
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import prisma from '@/lib/prisma';
@@ -35,6 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const decoded = jwt.verify(authToken, process.env.JWT_SECRET!) as { userId: string };
     console.log(`Token decodificado. userId: ${decoded.userId}`);
 
+    // Busca o usuário e seu semestre selecionado
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: { selectedSemester: true },
@@ -55,21 +55,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const selectedSemesterId = user.selectedSemesterId;
     console.log(`Semestre selecionado pelo usuário: ${selectedSemesterId}`);
 
-    // Busca a pasta específica com conteúdos filtrados pelo semestre
+    // Busca a pasta informada e seus conteúdos sem filtrar por subject
     const folder = await prisma.folder.findUnique({
       where: { id: folderId },
       include: {
-        contents: {
-          where: {
-            subject: {
-              semesterId: selectedSemesterId,
-            },
-          },
-          include: {
-            subject: true, // Inclui informações do subject para verificar o semestre
-          },
-        },
-        user: true, // Inclui informações do usuário que criou a pasta, se necessário
+        contents: true,
+        user: true, // informação do usuário que criou a pasta, se necessário
       },
     });
 
@@ -78,20 +69,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Pasta não encontrada.' });
     }
 
-    if (folder.contents.length === 0) {
-      console.log('Acesso proibido: Nenhum conteúdo disponível para o semestre selecionado.');
-      return res.status(403).json({ error: 'Acesso proibido. Nenhum conteúdo disponível para o semestre selecionado.' });
+    // Verifica se a pasta pertence ao semestre selecionado pelo usuário
+    if (folder.semesterId !== selectedSemesterId) {
+      console.log('Acesso proibido: A pasta não pertence ao semestre selecionado pelo usuário.');
+      return res
+        .status(403)
+        .json({ error: 'Acesso proibido. A pasta não pertence ao semestre selecionado.' });
     }
 
     console.log(`Pasta encontrada: ${folder.name}`);
     console.log(`Número de conteúdos na pasta: ${folder.contents.length}`);
     folder.contents.forEach((content, idx) => {
-      console.log(`  Conteúdo ${idx + 1}: ${content.titulo}, Semestre: ${content.subject?.semesterId}`);
+      console.log(`  Conteúdo ${idx + 1}: ${content.titulo}`);
     });
 
-    return res.status(200).json({ ...folder, contents: folder.contents || [] });
+    // Retorna a pasta e todos os conteúdos sem filtrar por subject
+    return res.status(200).json({
+      ...folder,
+      contents: folder.contents || [],
+    });
   } catch (error: any) {
-    console.error('Erro ao buscar detalhes da pasta com filtragem por semestre:', error);
+    console.error('Erro ao buscar detalhes da pasta sem filtrar por subject:', error);
 
     if (error instanceof jwt.JsonWebTokenError) {
       console.log('Erro: Token inválido.');
